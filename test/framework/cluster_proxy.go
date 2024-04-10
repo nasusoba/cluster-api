@@ -287,9 +287,9 @@ func (p *clusterProxy) GetWorkloadCluster(ctx context.Context, namespace, name s
 	// gets the kubeconfig from the cluster
 	config := p.getKubeconfig(ctx, namespace, name)
 
-	// if we are on mac and the cluster is a DockerCluster, it is required to fix the control plane address
+	// if we are on mac or WSL, and the cluster is a DockerCluster, it is required to fix the control plane address
 	// by using localhost:load-balancer-host-port instead of the address used in the docker network.
-	if goruntime.GOOS == "darwin" && p.isDockerCluster(ctx, namespace, name) {
+	if (goruntime.GOOS == "darwin" || IsEnvWSL()) && p.isDockerCluster(ctx, namespace, name) {
 		p.fixConfig(ctx, name, config)
 	}
 
@@ -455,4 +455,14 @@ func (p *clusterProxy) Dispose(ctx context.Context) {
 			log.Logf("Deleting the kubeconfig file %q file. You may need to remove this by hand.", p.kubeconfigPath)
 		}
 	}
+}
+
+// Check if the current environment is Windows Subsystem for Linux (WSL).
+// If so, with the Docker provider, we could not access the cluster with docker network.
+func IsEnvWSL() bool {
+	if distroName := os.Getenv("WSL_DISTRO_NAME"); distroName != "" {
+		return true
+	}
+
+	return false
 }
