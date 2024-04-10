@@ -24,6 +24,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	goruntime "runtime"
 	"sync"
 	"time"
 
@@ -286,10 +287,9 @@ func (p *clusterProxy) GetWorkloadCluster(ctx context.Context, namespace, name s
 	// gets the kubeconfig from the cluster
 	config := p.getKubeconfig(ctx, namespace, name)
 
-	// if we are on mac or WSL and the cluster is a DockerCluster, it is required to fix the control plane address
+	// if we are on mac and the cluster is a DockerCluster, it is required to fix the control plane address
 	// by using localhost:load-balancer-host-port instead of the address used in the docker network.
-	// Since the fix also works for Linux Docker, we do it for all platforms.
-	if p.isDockerCluster(ctx, namespace, name) {
+	if goruntime.GOOS == "darwin" && p.isDockerCluster(ctx, namespace, name) {
 		p.fixConfig(ctx, name, config)
 	}
 
